@@ -1,15 +1,20 @@
-use actix_web::{test, App};
-use zero2prod::health_check;
-
 #[actix_rt::test]
 async fn health_check_works() {
     // 启动应用
-    let app = test::init_service(App::new().service(health_check)).await;
-
+    spawn_app();
     // 发送请求
-    let req = test::TestRequest::get().uri("/health_check").to_request();
-    let resp = test::call_service(&app, req).await;
+    let client = reqwest::Client::new();
+    let response = client
+        .get("http://127.0.0.1:8080/health_check")
+        .send()
+        .await
+        .expect("Failed to execute request.");
 
     // 断言
-    assert!(resp.status().is_success());
+    assert!(response.status().is_success());
+}
+
+fn spawn_app() {
+    let server = zero2prod::run().expect("Failed to spawn app.");
+    let _ = tokio::spawn(server);
 }
